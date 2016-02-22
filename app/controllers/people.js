@@ -11,36 +11,35 @@ module.exports = function (app) {
 router.post('/', function (req, res, next) {
 
   var person = new Person(req.body);
-  
+
   person.save(function (err, createdPerson) {
     if (err) {
       res.status(500).send(err);
       return;
     }
-    
+
     res.send(createdPerson);
   });
 });
 
 // GET /api/people
 router.get('/', function (req, res, next) {
-  
+
   Person.find(function (err, people) {
-    
     if (err) {
       res.status(500).send(err);
       return;
     }
-    
+
     res.send(people);
   });
 });
 
 // GET /api/people/:id
 router.get('/:id', function (req, res, next) {
-  
+
   var personId = req.params.id;
-  
+
   Person.findById(personId, function(err, person) {
     if (err) {
       res.status(500).send(err);
@@ -49,7 +48,7 @@ router.get('/:id', function (req, res, next) {
       res.status(404).send('Person not found');
       return;
     }
-    
+
     res.send(person);
   });
 });
@@ -58,7 +57,7 @@ router.get('/:id', function (req, res, next) {
 router.put('/:id', function (req, res, next) {
 
   var personId = req.params.id;
-  
+
   Person.findById(personId, function(err, person) {
     if (err) {
       res.status(500).send(err);
@@ -67,16 +66,16 @@ router.put('/:id', function (req, res, next) {
       res.status(404).send('Person not found');
       return;
     }
-    
+
     person.name = req.body.name;
     person.age = req.body.age;
-    
+
     person.save(function(err, updatedPerson) {
       if (err) {
         res.status(500).send(err);
         return;
       }
-      
+
       res.send(updatedPerson);
     });
   });
@@ -84,9 +83,9 @@ router.put('/:id', function (req, res, next) {
 
 // DELETE /api/people/:id
 router.delete('/:id', function (req, res, next) {
-  
+
   var personId = req.params.id;
-  
+
   Person.remove({
     _id: personId
   }, function(err, data) {
@@ -94,7 +93,7 @@ router.delete('/:id', function (req, res, next) {
       res.status(500).send(err);
       return;
     }
-    
+
     console.log('Deleted ' + data + ' documents');
     res.sendStatus(204);
   });
