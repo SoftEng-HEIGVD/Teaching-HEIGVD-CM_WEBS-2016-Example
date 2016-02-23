@@ -26,8 +26,8 @@ var config = {
     app: {
       name: 'webs-2016-example'
     },
-    port: 3000,
-    db: 'mongodb://localhost/webs-2016-example-production'
+    port: process.env.PORT || 3000,
+    db: process.env.MONGOLAB_URI || 'mongodb://localhost/webs-2016-example-production'
   }
 };
 
