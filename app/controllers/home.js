@@ -8,11 +8,12 @@ module.exports = function (app) {
 };
 
 router.get('/', function (req, res, next) {
-  Article.find(function (err, articles) {
-    if (err) return next(err);
-    res.render('index', {
-      title: 'Generator-Express MVC',
-      articles: articles
-    });
+
+  // Serve the RAML documentation as the index page.
+  res.sendFile('api.html', {
+    root: 'public'
   });
+
+  // To redirect to the APIDOC documentation instead, comment the 3 lines above and uncomment this one.
+  //res.redirect('/apidoc');
 });

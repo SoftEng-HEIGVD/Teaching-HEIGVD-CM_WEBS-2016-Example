@@ -1,0 +1,1 @@
+define({  "name": "webs-2016-example",  "version": "0.0.1",  "description": "",  "sampleUrl": false,  "apidoc": "0.2.0",  "generator": {    "name": "apidoc",    "time": "2016-02-24T18:55:19.313Z",    "url": "http://apidocjs.com",    "version": "0.15.1"  }});

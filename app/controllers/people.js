@@ -7,7 +7,13 @@ module.exports = function (app) {
   app.use('/api/people', router);
 };
 
-// POST /api/people
+/**
+ * @api {post} /people Create a person
+ * @apiName CreatePerson
+ * @apiGroup People
+ *
+ * @apiSuccess {String} age Age of the person.
+ */
 router.post('/', function (req, res, next) {
 
   var person = new Person(req.body);

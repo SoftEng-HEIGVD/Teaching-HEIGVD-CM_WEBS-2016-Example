@@ -12,9 +12,22 @@ module.exports = function (grunt) {
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+    apidoc: {
+      myapp: {
+        src: "app/",
+        dest: "public/apidoc/"
+      }
+    },
     develop: {
       server: {
         file: 'app.js'
+      }
+    },
+    raml2html: {
+      all: {
+        files: {
+          'public/api.html': ['api.raml']
+        }
       }
     },
     stylus: {
@@ -73,6 +86,10 @@ module.exports = function (grunt) {
         });
     }, 500);
   });
+
+  grunt.registerTask('doc', [
+    'raml2html'
+  ]);
 
   grunt.registerTask('default', [
     'stylus',
