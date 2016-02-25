@@ -81,40 +81,34 @@ router.get('/', function(req, res, next) {
   var page = req.query.page ? parseInt(req.query.page, 10) : 1,
       pageSize = req.query.pageSize ? parseInt(req.query.pageSize, 10) : 30;
 
+  // Convert page and page size to offset and limit.
+  var offset = (page - 1) * pageSize,
+      limit = pageSize;
+
   // Count all books (without filters).
   function countAllBooks(callback) {
     Book.count(function(err, totalCount) {
       if (err) {
         callback(err);
-        return;
+      } else {
+        callback(undefined, totalCount);
       }
-
-      req.totalBookCount = totalCount;
-
-      callback();
     });
   }
 
   // Count books matching the filters.
-  function countFilteredBooks(callback) {
+  function countFilteredBooks(totalCount, callback) {
     Book.count(criteria, function(err, filteredCount) {
       if (err) {
         callback(err);
-        return;
+      } else {
+        callback(undefined, totalCount, filteredCount);
       }
-
-      req.filteredBookCount = filteredCount;
-
-      callback();
     });
   }
 
   // Find books matching the filters.
-  function findMatchingBooks(callback) {
-
-    // Convert page and page size to offset and limit.
-    var offset = (page - 1) * pageSize,
-        limit = pageSize;
+  function findMatchingBooks(totalCount, filteredCount, callback) {
 
     var query = Book
       .find(criteria)
@@ -132,14 +126,13 @@ router.get('/', function(req, res, next) {
     query.exec(function(err, books) {
       if (err) {
         callback(err);
-        return;
+      } else {
+        callback(undefined, totalCount, filteredCount, books);
       }
-
-      callback(undefined, books);
     });
   }
 
-  function sendResponse(err, books) {
+  function sendResponse(err, totalCount, filteredCount, books) {
     if (err) {
       res.status(500).send(err);
       return;
@@ -148,8 +141,8 @@ router.get('/', function(req, res, next) {
     // Return the pagination data in headers.
     res.set('X-Pagination-Page', page);
     res.set('X-Pagination-Page-Size', pageSize);
-    res.set('X-Pagination-Total', req.totalBookCount);
-    res.set('X-Pagination-Filtered-Total', req.filteredBookCount);
+    res.set('X-Pagination-Total', totalCount);
+    res.set('X-Pagination-Filtered-Total', filteredCount);
 
     res.send(books);
   }
