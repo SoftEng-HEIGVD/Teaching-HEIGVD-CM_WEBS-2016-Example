@@ -14,24 +14,30 @@ module.exports = function (app) {
  */
 function findBookPublisher(req, res, next) {
   if (!req.body.publisherId) {
+    // If no publisher ID is given, return an error.
     res.status(400).send('Publisher ID is required');
     return;
   } else if (!mongoose.Types.ObjectId.isValid(req.body.publisherId)) {
+    // If the publisher ID is not a valid MongoDB ID, no need to execute a query, return an error directly.
     res.status(400).send('No publisher with ID ' + req.body.publisherId);
     return;
   }
 
-  Publisher.findOne({ _id: req.body.publisherId }, function(err, publisher) {
+  // Find the publisher.
+  Publisher.findById(req.body.publisherId, function(err, publisher) {
     if (err) {
       res.status(500).send(err);
       return;
     } else if (!publisher) {
+      // Return an error if the publisher doesn't exist.
       res.status(400).send('No publisher with ID ' + req.body.publisherId);
       return;
     }
 
+    // Store the publisher in the request.
     req.bookPublisher = publisher;
 
+    // Forward the request to the next middleware.
     next();
   });
 }
@@ -70,14 +76,49 @@ router.get('/', function(req, res, next) {
     criteria.format = req.query.format;
   }
 
-  // Find matching books.
-  Book.find(criteria, function(err, books) {
+  // Get page and page size for pagination.
+  var page = req.query.page ? parseInt(req.query.page, 10) : 1,
+      pageSize = req.query.pageSize ? parseInt(req.query.pageSize, 10) : 30;
+
+  // Convert to offset and limit.
+  var offset = (page - 1) * pageSize,
+      limit = pageSize;
+
+  // Count the total number of books (without filters).
+  Book.count(function(err, totalCount) {
     if (err) {
       res.status(500).send(err);
       return;
     }
 
-    res.send(books);
+    // Count the filtered number of books.
+    Book.count(criteria, function(err, filteredCount) {
+      if (err) {
+        res.status(500).send(err);
+        return;
+      }
+
+      // Return the pagination data in headers.
+      res.set('X-Pagination-Page', page);
+      res.set('X-Pagination-Page-Size', pageSize);
+      res.set('X-Pagination-Total', totalCount);
+      res.set('X-Pagination-Filtered-Total', filteredCount);
+
+      // Find paginated matching books.
+      Book.find(criteria)
+        // Do not forget to sort, as pagination makes more sense with sorting.
+        .sort('title')
+        .skip(offset)
+        .limit(limit)
+        .exec(function(err, books) {
+          if (err) {
+            res.status(500).send(err);
+            return;
+          }
+
+          res.send(books);
+        });
+    });
   });
 });
 

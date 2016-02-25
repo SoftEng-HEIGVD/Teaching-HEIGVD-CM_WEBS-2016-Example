@@ -114,7 +114,7 @@ function countBooks(format, ascending, offset, limit, callback) {
 router.get('/', function(req, res, next) {
 
   var offset = req.query.offset ? parseInt(req.query.offset, 10) : 0,
-      limit = req.query.limit ? parseInt(req.query.limit, 10) : 2;
+      limit = req.query.limit ? parseInt(req.query.limit, 10) : 30;
 
   // Count the number of books by publisher, with an optional book format filter.
   countBooks(req.query.bookFormat, false, offset, limit, function(err, bookCounts) {
