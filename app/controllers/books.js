@@ -105,7 +105,8 @@ router.get('/', function(req, res, next) {
       res.set('X-Pagination-Filtered-Total', filteredCount);
 
       // Find paginated matching books.
-      var query = Book.find(criteria)
+      var query = Book
+        .find(criteria)
         // Do not forget to sort, as pagination makes more sense with sorting.
         .sort('title')
         .skip(offset)
