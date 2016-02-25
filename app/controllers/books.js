@@ -114,7 +114,7 @@ router.get('/', function(req, res, next) {
 
       // Embed publisher object if specified in the query.
       if (req.query.embed == 'publisher') {
-        query.populate('publisher');
+        query = query.populate('publisher');
       }
 
       // Execute the query.
