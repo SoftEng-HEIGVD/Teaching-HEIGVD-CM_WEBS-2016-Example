@@ -4,7 +4,7 @@ var mongoose = require('mongoose'),
 var BookSchema = new Schema({
   title: { type: String, required: true },
   format: String,
-  publisherId: { type: Schema.Types.ObjectId, required: true }
+  publisher: { type: Schema.Types.ObjectId, ref: 'Publisher', required: true }
 });
 
 mongoose.model('Book', BookSchema);

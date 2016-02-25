@@ -9,28 +9,28 @@ module.exports = function (app) {
 };
 
 /**
- * Middleware that checks that there is a publisher in the database that corresponds to the "publisherId" JSON property in the request body.
+ * Middleware that checks that there is a publisher in the database that corresponds to the "publisher" JSON property in the request body.
  * If it doesn't exist, 400 Bad Request is returned. If it does, it's stored in `req.bookPublisher`.
  */
 function findBookPublisher(req, res, next) {
-  if (!req.body.publisherId) {
+  if (!req.body.publisher) {
     // If no publisher ID is given, return an error.
     res.status(400).send('Publisher ID is required');
     return;
-  } else if (!mongoose.Types.ObjectId.isValid(req.body.publisherId)) {
+  } else if (!mongoose.Types.ObjectId.isValid(req.body.publisher)) {
     // If the publisher ID is not a valid MongoDB ID, no need to execute a query, return an error directly.
-    res.status(400).send('No publisher with ID ' + req.body.publisherId);
+    res.status(400).send('No publisher with ID ' + req.body.publisher);
     return;
   }
 
   // Find the publisher.
-  Publisher.findById(req.body.publisherId, function(err, publisher) {
+  Publisher.findById(req.body.publisher, function(err, publisher) {
     if (err) {
       res.status(500).send(err);
       return;
     } else if (!publisher) {
       // Return an error if the publisher doesn't exist.
-      res.status(400).send('No publisher with ID ' + req.body.publisherId);
+      res.status(400).send('No publisher with ID ' + req.body.publisher);
       return;
     }
 
@@ -63,8 +63,8 @@ router.get('/', function(req, res, next) {
   var criteria = {};
 
   // Filter by publisher.
-  if (req.query.publisherId) {
-    criteria.publisherId = req.query.publisherId;
+  if (req.query.publisher) {
+    criteria.publisher = req.query.publisher;
   }
 
   // Filter by format.
@@ -105,19 +105,26 @@ router.get('/', function(req, res, next) {
       res.set('X-Pagination-Filtered-Total', filteredCount);
 
       // Find paginated matching books.
-      Book.find(criteria)
+      var query = Book.find(criteria)
         // Do not forget to sort, as pagination makes more sense with sorting.
         .sort('title')
         .skip(offset)
-        .limit(limit)
-        .exec(function(err, books) {
-          if (err) {
-            res.status(500).send(err);
-            return;
-          }
+        .limit(limit);
 
-          res.send(books);
-        });
+      // Embed publisher object if specified in the query.
+      if (req.query.embed == 'publisher') {
+        query.populate('publisher');
+      }
+
+      // Execute the query.
+      query.exec(function(err, books) {
+        if (err) {
+          res.status(500).send(err);
+          return;
+        }
+
+        res.send(books);
+      });
     });
   });
 });
@@ -127,7 +134,15 @@ router.get('/', function(req, res, next) {
  * and stores it in `req.book`.
  */
 function findBook(req, res, next) {
-  Book.findById(req.params.id, function(err, book) {
+
+  var query = Book
+    .findById(req.params.id);
+
+  if (req.query.embed == 'publisher') {
+    query = query.populate('publisher');
+  }
+
+  query.exec(function(err, book) {
     if (err) {
       res.status(500).send(err);
       return;
@@ -153,7 +168,7 @@ router.put('/:id', findBook, findBookPublisher, function(req, res, next) {
 
   req.book.title = req.body.title;
   req.book.format = req.body.format;
-  req.book.publisherId = req.body.publisherId;
+  req.book.publisher = req.body.publisher;
 
   req.book.save(function(err, updatedBook) {
     if (err) {

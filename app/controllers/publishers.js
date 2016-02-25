@@ -77,7 +77,7 @@ function countBooks(format, ascending, offset, limit, callback) {
   // Count the number of books by publisher ID.
   aggregations.push({
     $group: {
-      _id: '$publisherId',
+      _id: '$publisher',
       total: { $sum: 1 }
     }
   });
@@ -216,7 +216,7 @@ router.delete('/:id', findPublisher, function(req, res, next) {
     }
 
     // Cascade delete all associated books.
-    Book.remove({ publisherId: publisherId }, function(err) {
+    Book.remove({ publisher: publisherId }, function(err) {
       if (err) {
         res.status(500).send(err);
         return;
