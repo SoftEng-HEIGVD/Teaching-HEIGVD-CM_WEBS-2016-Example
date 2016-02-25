@@ -41,10 +41,7 @@ router.get('/', function(req, res, next) {
   }
 
   // Find matching shops.
-  var query = Shop.find(criteria);
-
-  // Execute the query.
-  query.exec(function(err, shops) {
+  Shop.find(criteria, function(err, shops) {
     if (err) {
       res.status(500).send(err);
       return;
