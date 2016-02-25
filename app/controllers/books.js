@@ -1,4 +1,5 @@
-var express = require('express'),
+var async = require('async'),
+  express = require('express'),
   router = express.Router(),
   mongoose = require('mongoose'),
   Book = mongoose.model('Book'),
@@ -80,54 +81,84 @@ router.get('/', function(req, res, next) {
   var page = req.query.page ? parseInt(req.query.page, 10) : 1,
       pageSize = req.query.pageSize ? parseInt(req.query.pageSize, 10) : 30;
 
-  // Convert to offset and limit.
-  var offset = (page - 1) * pageSize,
-      limit = pageSize;
+  // Count all books (without filters).
+  function countAllBooks(callback) {
+    Book.count(function(err, totalCount) {
+      if (err) {
+        callback(err);
+        return;
+      }
 
-  // Count the total number of books (without filters).
-  Book.count(function(err, totalCount) {
+      req.totalBookCount = totalCount;
+
+      callback();
+    });
+  }
+
+  // Count books matching the filters.
+  function countFilteredBooks(callback) {
+    Book.count(criteria, function(err, filteredCount) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      req.filteredBookCount = filteredCount;
+
+      callback();
+    });
+  }
+
+  // Find books matching the filters.
+  function findMatchingBooks(callback) {
+
+    // Convert page and page size to offset and limit.
+    var offset = (page - 1) * pageSize,
+        limit = pageSize;
+
+    var query = Book
+      .find(criteria)
+      // Do not forget to sort, as pagination makes more sense with sorting.
+      .sort('title')
+      .skip(offset)
+      .limit(limit);
+
+    // Embed publisher object if specified in the query.
+    if (req.query.embed == 'publisher') {
+      query = query.populate('publisher');
+    }
+
+    // Execute the query.
+    query.exec(function(err, books) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      callback(undefined, books);
+    });
+  }
+
+  function sendResponse(err, books) {
     if (err) {
       res.status(500).send(err);
       return;
     }
 
-    // Count the filtered number of books.
-    Book.count(criteria, function(err, filteredCount) {
-      if (err) {
-        res.status(500).send(err);
-        return;
-      }
+    // Return the pagination data in headers.
+    res.set('X-Pagination-Page', page);
+    res.set('X-Pagination-Page-Size', pageSize);
+    res.set('X-Pagination-Total', req.totalBookCount);
+    res.set('X-Pagination-Filtered-Total', req.filteredBookCount);
 
-      // Return the pagination data in headers.
-      res.set('X-Pagination-Page', page);
-      res.set('X-Pagination-Page-Size', pageSize);
-      res.set('X-Pagination-Total', totalCount);
-      res.set('X-Pagination-Filtered-Total', filteredCount);
+    res.send(books);
+  }
 
-      // Find paginated matching books.
-      var query = Book
-        .find(criteria)
-        // Do not forget to sort, as pagination makes more sense with sorting.
-        .sort('title')
-        .skip(offset)
-        .limit(limit);
-
-      // Embed publisher object if specified in the query.
-      if (req.query.embed == 'publisher') {
-        query = query.populate('publisher');
-      }
-
-      // Execute the query.
-      query.exec(function(err, books) {
-        if (err) {
-          res.status(500).send(err);
-          return;
-        }
-
-        res.send(books);
-      });
-    });
-  });
+  async.waterfall([
+    countAllBooks,
+    countFilteredBooks,
+    findMatchingBooks
+  ], sendResponse);
 });
 
 /**
