@@ -97,18 +97,18 @@ router.get('/', function(req, res, next) {
   }
 
   // Count books matching the filters.
-  function countFilteredBooks(totalCount, callback) {
+  function countFilteredBooks(callback) {
     Book.count(criteria, function(err, filteredCount) {
       if (err) {
         callback(err);
       } else {
-        callback(undefined, totalCount, filteredCount);
+        callback(undefined, filteredCount);
       }
     });
   }
 
   // Find books matching the filters.
-  function findMatchingBooks(totalCount, filteredCount, callback) {
+  function findMatchingBooks(callback) {
 
     var query = Book
       .find(criteria)
@@ -127,16 +127,21 @@ router.get('/', function(req, res, next) {
       if (err) {
         callback(err);
       } else {
-        callback(undefined, totalCount, filteredCount, books);
+        callback(undefined, books);
       }
     });
   }
 
-  function sendResponse(err, totalCount, filteredCount, books) {
+  // Set the pagination headers and send the matching books in the body.
+  function sendResponse(err, results) {
     if (err) {
       res.status(500).send(err);
       return;
     }
+
+    var totalCount = results[0],
+        filteredCount = results[1],
+        books = results[2];
 
     // Return the pagination data in headers.
     res.set('X-Pagination-Page', page);
@@ -147,7 +152,7 @@ router.get('/', function(req, res, next) {
     res.send(books);
   }
 
-  async.waterfall([
+  async.parallel([
     countAllBooks,
     countFilteredBooks,
     findMatchingBooks
